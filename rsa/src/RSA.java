@@ -36,7 +36,7 @@ public class RSA {
         mas = "Hallo, dies ist ein Test";
         ArrayList<Long> c2 = encrypt(mas);
         System.out.println(asString());
-        System.out.println("c: " + c2.toString());
+        System.out.println("c: " + c2);
         System.out.println("m': " + decrypt(c2));
     }
 
@@ -108,7 +108,7 @@ public class RSA {
      * @return ArrayList<Long>
      */
     private static ArrayList<Long> encrypt(String message, long e, long n){
-        ArrayList<Long> result = new ArrayList<Long>();
+        ArrayList<Long> result = new ArrayList<>();
         ArrayList<Long> ascii = encode(message);
         for (long val : ascii) {
             result.add(mM(val, e, n));
@@ -160,7 +160,7 @@ public class RSA {
      * @return decoded String
      */
     private static String decrypt(ArrayList<Long> ciphertext, long d, long n){
-        ArrayList<Long> res = new ArrayList<Long>();
+        ArrayList<Long> res = new ArrayList<>();
         for (long val : ciphertext) {
             res.add(mM(val, d, n)); //decrypt
         }
@@ -174,7 +174,7 @@ public class RSA {
      * @return ArrayList<Long>
      */
     private static ArrayList<Long> encode(String message){
-        ArrayList<Long> ascii = new ArrayList<Long>();
+        ArrayList<Long> ascii = new ArrayList<>();
         char[] mac = message.toCharArray();
         for (long add : mac) {
             ascii.add(add);
@@ -216,16 +216,15 @@ public class RSA {
 
     /**
      * this method performs the enhanced Euclidean algorithm
-     * @param a
-     * @param b
-     * @return
+     * @param a long
+     * @param b long
+     * @return long[]
      */
     private static long[] eEuclid(long a, long b) {
         long[] res = new long[3];
         if(b == 0) {  //termination condition
             res[0] = a; //the gcd
             res[1] = 1;
-            res[2] = 0;
         } else {
             res = eEuclid(b, a % b);
             long k = res[1];
