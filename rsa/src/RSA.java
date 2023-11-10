@@ -1,10 +1,10 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 public class RSA {
-    //Attriubute
+    //Attribute
     private static long m;
+    private static String mas;
     private static long e;
     private static long d;
     private static long p;
@@ -13,113 +13,168 @@ public class RSA {
     private static long n;
 
     public static void main(String[] args) {
-        int[] primes = getRandomPrimes(1000);
-        init(primes[0], primes[1], 65);
-        long c = encrypt();
+        //RSA based on given example
+        init(17, 37, 17);
+        m = 65;
+        long c0 = encrypt(m);
         System.out.println(asString());
-        System.out.println("c: " + c);
-        System.out.println("m': " + decrypt(c));
+        System.out.println("c: " + c0);
+        System.out.println("m': " + decrypt(c0));
 
-//        ArrayList<Long > c2 = encrypt("Dies ist ein Test!", 17, 629);
-//        System.out.println(mM_long(68105101115L, 17, 629));
-//        System.out.println(mM_long(553, 305, 629));
-//        System.out.println(c2);
-//        System.out.println(decrypt(553, 305, 629));
-//        ArrayList<Long > test = new ArrayList<>();
-//        test.add(315);
-//        System.out.println(decode(test));
-//        System.out.println(decrypt(c2, 305, 629));
-//
-//        System.out.println(decode(encode("Dies ist ein Test!")));
+        //RSA with random primes between 2 and 10000 and number as message
+        long[] primes = getRandomPrimes(10000);
+        init(primes[0], primes[1]);
+        m = 65;
+        long c1 = encrypt(m);
+        System.out.println(asString());
+        System.out.println("c: " + c1);
+        System.out.println("m': " + decrypt(c1));
+
+        //RSA with random primes between 2 and 10000 and string as message
+        primes = getRandomPrimes(1000);
+        init(primes[0], primes[1]);
+        mas = "Hallo, dies ist ein Test";
+        ArrayList<Long> c2 = encrypt(mas);
+        System.out.println(asString());
+        System.out.println("c: " + c2.toString());
+        System.out.println("m': " + decrypt(c2));
     }
 
     /**
-     * init RSA with just two primes and a message
-     * @param prim1
-     * @param prim2
-     * @param message
+     * init RSA with just two primes
+     * @param prim1 long
+     * @param prim2 long
      */
-    private static void init(long prim1, long prim2, long message){
+    private static void init(long prim1, long prim2){
         p = prim1;
         q = prim2;
         n = p * q;
         phiN = (p-1)*(q-1);
-        e = findE();
-        d = multInvers(e, phiN);
-        m = message;
+        e = findE();    //find the first suitable e
+        d = multInverse(e, phiN);
+        m = 0;      //reset message
+        mas = "";   //reset message
     }
 
     /**
      * init RSA with given primes and given e
-     * @param prim1
-     * @param prim2
-     * @param newE
-     * @param message
+     * @param prim1 long
+     * @param prim2 long
+     * @param newE long
      */
-    private static void init(long prim1, long prim2, long newE, long message){
-        p = prim1;
-        q = prim2;
-        n = p * q;
-        phiN = (p-1)*(q-1);
+    private static void init(long prim1, long prim2, long newE){
+        init(prim1, prim2);
         e = newE;
-        d = multInvers(e, phiN);
-        m = message;
+        d = multInverse(e, phiN);
     }
 
     /**
-     * encrypt set message m using e and n according to the rsa algorithm
-     * @return
+     * encrypt number message using already init e and n according to the rsa algorithm.
+     * makes Use of the modularMultiplication method as c = m^e mod n
+     * @return long
      */
-    private static long encrypt(){
-        return mM(m, e, n);
+    private static long encrypt(long message){
+        return mM(message, e, n);
     }
 
     /**
-     * encrypt message using e and n, all given vai parameter
-     * @param message
-     * @param e
-     * @param n
-     * @return
+     * encrypt number message using custom e and n according to the rsa algorithm.
+     * makes Use of the modularMultiplication method as c = m^e mod n
+     * @param message long
+     * @param e long
+     * @param n long
+     * @return long
      */
     private static long encrypt(long message, long e, long n){
         return mM(message, e, n);
     }
-    private static ArrayList<Long > encrypt(String message, long e, long n){
-        ArrayList<Long > result = new ArrayList<Long >();
-        ArrayList<Long > ascii = encode(message);
-        for(int i = 0; i < ascii.size(); i+=4) {
-            long temp = 0;
-            for (int j = 0; j < 4 && i+j < ascii.size(); j++) {
-                temp *= 1000;
-                temp += ascii.get(i+j);
-            }
-            result.add(mM_long(temp, e, n));
+    
+    /**
+     * encrypt String message using already init e and n according to the rsa algorithm.
+     * @param message String
+     * @return ArrayList<Long>
+     */
+    private static ArrayList<Long> encrypt(String message){
+        return encrypt(message, e, n);
+    }
+
+    /**
+     * encrypt String message using custom e and n according to the rsa algorithm.
+     * Each character of the String is converted to it's ascii representation and
+     * then encrypted using modularMultiplication as c = m^e mod n
+     * @param message String
+     * @param e long
+     * @param n long
+     * @return ArrayList<Long>
+     */
+    private static ArrayList<Long> encrypt(String message, long e, long n){
+        ArrayList<Long> result = new ArrayList<Long>();
+        ArrayList<Long> ascii = encode(message);
+        for (long val : ascii) {
+            result.add(mM(val, e, n));
         }
         return result;
     }
 
-    private static long decrypt(long cyphertext){
-        return mM(cyphertext, d, n);
+    /**
+     * decrypt number ciphertext using already init d and n according to the rsa algorithm.
+     * makes use of modularMultiplication  as m' = c^d mod n
+     * @param ciphertext long
+     * @return long
+     */
+    private static long decrypt(long ciphertext){
+        return mM(ciphertext, d, n);
     }
 
-    private static long decrypt(long cyphertext, long d, long n){
-        return mM(cyphertext, d, n);
+    /**
+     * decrypt number ciphertext using already init d and n according to the rsa algorithm.
+     * makes use of modularMultiplication as m' = c^d mod n
+     * @param ciphertext long
+     * @param d long
+     * @param n long
+     * @return long
+     */
+    private static long decrypt(long ciphertext, long d, long n){
+        return mM(ciphertext, d, n);
     }
 
-    private static String decrypt(ArrayList<Long > cyphertext, long d, long n){
-        ArrayList<Long> res = new ArrayList<Long >();
-        for(int i = 0; i < cyphertext.size(); i++){
-            long temp = mM(cyphertext.get(i), d, n);
-            for(long j = 0; i < 4; j++){
-                res.add(temp%1000);
-                temp/=1000;
-            }
+    /**
+     * decrypt ArrayList ciphertext that comes from String message using already init d and n according to the rsa algorithm.
+     * makes use of the equivalent decrypt() method.
+     * @param ciphertext ArrayList<Long>
+     * @return decoded String
+     */
+    private static String decrypt(ArrayList<Long> ciphertext){
+        return decrypt(ciphertext, d, n);
+    }
+
+    /**
+     * decrypt ArrayList ciphertext that comes from String message using custom d and n according to the rsa algorithm.
+     * makes use of the equivalent decrypt() method.
+     * The given ciphertext ArrayList is being decrypted item by item making use of modularMultiplication.
+     * After every item of the ciphertext has been decrypted, the resulting ArrayList is being decoded back
+     * to a String according to ascii values.
+     * @param ciphertext ArrayList<Long>
+     * @param d long
+     * @param n long
+     * @return decoded String
+     */
+    private static String decrypt(ArrayList<Long> ciphertext, long d, long n){
+        ArrayList<Long> res = new ArrayList<Long>();
+        for (long val : ciphertext) {
+            res.add(mM(val, d, n)); //decrypt
         }
-        return decode(res);
+        return decode(res); //decode
     }
 
-    private static ArrayList<Long > encode(String message){
-        ArrayList<Long > ascii = new ArrayList<Long >();
+    /**
+     * A given String is being encoded using ascii.
+     * Each character is therefore being translated into it's base 10 representation and stored in an ArrayList
+     * @param message String
+     * @return ArrayList<Long>
+     */
+    private static ArrayList<Long> encode(String message){
+        ArrayList<Long> ascii = new ArrayList<Long>();
         char[] mac = message.toCharArray();
         for (long add : mac) {
             ascii.add(add);
@@ -127,82 +182,109 @@ public class RSA {
         return ascii;
     }
 
-    private static String decode(ArrayList<Long > message){
+    /**
+     * A given ArrayList is being decoded using ascii.
+     * Each value is therefore being translated into it's alphanumerical representation and stored in a String
+     * @param message ArrayList<Long>
+     * @return String
+     */
+    private static String decode(ArrayList<Long> message){
+        StringBuilder res = new StringBuilder();
         char[] mac = new char[message.size()];
         for(int i = 0; i < message.size(); i++){
             mac[i] = (char) message.get(i).intValue();
+            res.append(mac[i]);
         }
-        return Arrays.toString(mac);
+        return res.toString();
     }
 
+    /**
+     * this method uses the square and multiply algorithm to solve modular exponential terms.
+     * The algorithm is recursive and works as follows:
+     * if the exponent is even -> half it and square the result
+     * if the exponent is odd -> subtract one to make it even and multiply the result by the base
+     * @param basis long
+     * @param exponent long
+     * @param modulo long
+     * @return long
+     */
     private static long mM(long basis, long exponent, long modulo) {
-        long ergebnis = 0;
+        if(exponent == 1) return basis % modulo;
+        else if(exponent % 2 == 0) return (mM(basis, (exponent / 2), modulo) * mM(basis, (exponent / 2), modulo)) % modulo;
+        else return (basis * mM(basis, (exponent - 1), modulo)) % modulo;
+    }
 
-        if(exponent == 1) {
-            ergebnis = basis % modulo;
-        } else if(exponent % 2 == 0) {
-            ergebnis =  mM(basis, (exponent / 2), modulo) * mM(basis, (exponent / 2), modulo) % modulo;
-        } else if(exponent % 2 != 0) {
-            ergebnis = basis * mM(basis, (exponent - 1), modulo) % modulo;
+    /**
+     * this method performs the enhanced Euclidean algorithm
+     * @param a
+     * @param b
+     * @return
+     */
+    private static long[] eEuclid(long a, long b) {
+        long[] res = new long[3];
+        if(b == 0) {  //termination condition
+            res[0] = a; //the gcd
+            res[1] = 1;
+            res[2] = 0;
+        } else {
+            res = eEuclid(b, a % b);
+            long k = res[1];
+            long l = res[2];
+            res[1] = l; //move l from index 2 to 1
+            res[2] = k - l * (a / b); //calculate new l
         }
-        return ergebnis;
+        return res;
     }
 
-    private static long mM_long(long basis, long exponent, long modulo) {
-        long ergebnis = 0;
-
-        if(exponent == 1) {
-            ergebnis = (int) (basis % modulo);
-        } else if(exponent % 2 == 0) {
-            ergebnis = (mM_long(basis, (exponent / 2), modulo) * mM_long(basis, (exponent / 2), modulo)) % modulo;
-        } else if(exponent % 2 != 0) {
-            ergebnis = (int) ((basis * mM_long(basis, (exponent - 1), modulo)) % modulo);
-        }
-        return ergebnis;
+    /**
+     * calculate the multiplicative inverse for 'a' in number space of mod
+     * @param a long
+     * @param mod long
+     * @return long
+     */
+    private static long multInverse(long a, long mod) {
+        long[] msf = eEuclid(mod, a);   //multiple sum formula calculated with enhanced Euclid
+        if(msf[0] == 1){  //if gcd is 1
+            return (msf[2] + mod) % mod;
+        } else return 0;    //an error occurred
     }
 
-    private static long[] eEuklid(long a, long b) {
-        long[] ausgabe = new long[3];
-        if(b == 0){  //Abbruchbedingung
-            ausgabe[0] = a; //der ggT
-            ausgabe[1] = 1;
-            ausgabe[2] = 0;
-        }else{
-            ausgabe = eEuklid(b, a % b);
-            long k = ausgabe[1];
-            long l = ausgabe[2];
-            ausgabe[1] = l; //Verschieben von l von index 2 auf 1
-            ausgabe[2] = k - l * (a / b); //berechnen des neuen l
-        }
-        return ausgabe;
-    }
-
-    private static long multInvers(long a, long mod) {
-        long[] vfsf = eEuklid(mod, a);
-        if(vfsf[0] == 1){  //falls der ggT 1 ist
-            return (vfsf[2] + mod) % mod; //Ausgabe
-        } else return 0;
-    }
-
-    private static int findE(){
+    /**
+     * finding a suitable e for the rsa-algorithm.
+     * requirement: the greatest common divisor of e and phiN must be 1
+     * @return long
+     */
+    private static long findE(){
         for(int i = 3; i < phiN; i+=2){
-            if(ggT(i, phiN) == 1) return i;
+            if(gcd(i, phiN) == 1) return i;
         }
-        return -1;
+        return -1;  //an error occurred
     }
 
-    private static long ggT(long a, long b){
+    /**
+     * simple recursive algorithm to find the greatest common divisor of two numbers
+     * @param a long
+     * @param b long
+     * @return long
+     */
+    private static long gcd(long a, long b){
         if(b == 0) return a;
-        if(b > a) return ggT(b, a);
-        return ggT(a % b,b);
+        if(b > a) return gcd(b, a);
+        return gcd(a % b,b);
     }
 
-    private static int[] getRandomPrimes(int max) {
-        int[] res = new int[2];
+    /**
+     * method returns two random primes between 2 and the maximum value provided in the parameter
+     * @param max long
+     * @return long[]
+     */
+    private static long[] getRandomPrimes(int max) {
+        long[] res = new long[2];
         Random rand = new Random();
-        int num = rand.nextInt(max) + 1;
+        long num = rand.nextInt(max) + 1;
         for(int i = 0; i < res.length; i++){
-            while (!istPrimzahl(num) || num == res[0]) {
+            while (!isPrime(num) || num == res[0]) {
+                //generate new random number while it's not a prime or is a prime, but was already generated
                 num = rand.nextInt(max) + 1;
             }
             res[i] = num;
@@ -211,22 +293,31 @@ public class RSA {
         return res;
     }
 
-    private static boolean istPrimzahl(long x) {
+    /**
+     * algorithm that checks whether a given number is a prime or not.
+     * @param x long
+     * @return boolean
+     */
+    private static boolean isPrime(long x) {
         if(x < 0 || x == 1 || x == 0) return false;
         if(x == 2) return true;
-        for(int i = 2; i <= x - 1; i ++) {
+        for(int i = 2; i <= Math.sqrt(x); i ++) {
             if(x % i == 0) return false;
         }
         return true;
     }
 
+    /**
+     * returns a String containing all the calculated values needed to use the rsa algorithm
+     * @return String
+     */
     private static String asString() {
-        return "p: " + p +
+        return "\np: " + p +
                 "\nq: " + q +
                 "\nn: " + n +
                 "\nphiN: " + phiN +
                 "\ne: " + e +
                 "\nd: " + d +
-                "\nm: " + m;
+                (m == 0 ? "\nm: " + mas : "\nm: " + m); //use number or String message depending on which is used
     }
 }
